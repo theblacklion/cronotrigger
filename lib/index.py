@@ -100,6 +100,14 @@ class Index(object):
                      AND dirs.mtime != cur_dirs.mtime'''
             return cur.execute(sql)
 
+    def get_added_or_modified_dirs(self):
+        with self._db_conn as cur:
+            sql = '''SELECT cur_dirs.* FROM cur_dirs
+                     LEFT JOIN dirs USING (path)
+                     WHERE (dirs.mtime IS NULL) OR (dirs.mtime IS NOT NULL
+                     AND dirs.mtime != cur_dirs.mtime)'''
+            return cur.execute(sql)
+
     def get_added_files(self):
         with self._db_conn as cur:
             sql = '''SELECT cur_files.* FROM cur_files

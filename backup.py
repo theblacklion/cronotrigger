@@ -45,7 +45,8 @@ def main():
         backup.create(sum_bytes=bytes)
 
         logging.info('Backing up tree structure.')
-        backup.create_tree(index.get_all_dirs())
+        # backup.create_tree(index.get_all_dirs())
+        backup.create_tree(index.get_added_or_modified_dirs())
 
         # TODO Collect errors also in extra log file.
         # TODO Try to add some nice sleeps not to hug the cpu and io too much.
@@ -53,8 +54,8 @@ def main():
         logging.info('Backing up files.')
         backup.copy_files(index.get_added_or_modified_files())
 
-        logging.info('Linking unmodified files.')
-        backup.link_old_files(index.get_unmodified_files())
+        # logging.info('Linking unmodified files.')
+        # backup.link_old_files(index.get_unmodified_files())
 
         missing_bytes = backup.get_sum_missing_bytes()
         if missing_bytes:
