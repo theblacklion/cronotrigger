@@ -34,7 +34,7 @@ class Reader(Thread):
         self._sum_bytes += count
 
     def run(self):
-        self._logger.info('Started thread.')
+        self._logger.debug('Started thread.')
         sum_bytes = self._sum_bytes
         sum_bytes_transferred = 0
         while self._running:
@@ -156,10 +156,13 @@ class Reader(Thread):
             except Queue.Empty:
                 time.sleep(0.1)
                 self._is_idle = True
-        self._logger.info('Stopped thread.')
+        self._logger.debug('Stopped thread.')
         self._is_idle = True
 
     def stop(self):
+        if self.is_alive():
+            while not self._input_queue.empty() and not self._is_idle:
+                time.sleep(0.1)
         self._running = False
 
 
@@ -176,7 +179,7 @@ class Writer(Thread):
         self._logger = logging.getLogger('backup.writer')
 
     def run(self):
-        self._logger.info('Started thread.')
+        self._logger.debug('Started thread.')
         handle = None
         while self._running:
             try:
@@ -245,7 +248,7 @@ class Writer(Thread):
                 time.sleep(0.1)
         if handle:
             handle.close()
-        self._logger.info('Stopped thread.')
+        self._logger.debug('Stopped thread.')
         self._is_idle = True
 
     def stop(self):
