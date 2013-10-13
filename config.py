@@ -5,6 +5,7 @@ SOURCE_PATHS = ['~']
 BACKUP_PATH = '/media/backup/cronotrigger'
 EXCLUDE_PATHS = ['.cache', '.gvfs', '.tmp']
 
+LOG_FORMAT = '[%(asctime)-15s] [%(module)s.%(funcName)s.%(levelname)s] %(message)s'
 LOG_LEVEL = logging.INFO
 
 

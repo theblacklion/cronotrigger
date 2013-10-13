@@ -261,18 +261,22 @@ class Writer(Thread):
 class Backup(object):
 
     def __init_base_path(self, base_path):
+        # TODO 1. generate uuid which matches this machine.
+        #      2. search for backup folder matching the uuid.
+        #      3. create one if necessary
+        # NOTE: UUID is the blkid of the root mount point.
         if not exists(base_path):
-            makedirs(base_path)
+            raise Exception('Backup path not found: %s' % base_path)
 
     def __init__(self, base_path):
         super(Backup, self).__init__()
         self._base_path = base_path
-        self.__init_base_path(base_path)
         self._logger = logging.getLogger('backup')
         self._reader, self._writer = None, None
         self._dirs_need_stats = []
         self._missing_files = []
         self._missing_bytes = 0
+        self.__init_base_path(base_path)
 
     def __init_threads(self, sum_bytes):
         self._input_queue = Queue.Queue(maxsize=QUEUE_SIZE * 4)
@@ -399,7 +403,12 @@ class Backup(object):
             # print src_dir
             dst_dir = join(self._backup_path, '/'.join(parts))
             # print dst_dir
-            copystat(src_dir, dst_dir, follow_symlinks=False)
+            try:
+                copystat(src_dir, dst_dir, follow_symlinks=False)
+            except KeyboardInterrupt:
+                raise
+            except Exception as reason:
+                self._logger.error(reason)
             del parts[-1]
 
     def copy_dir_stats(self):
@@ -410,3 +419,9 @@ class Backup(object):
     def commit(self):
         self._logger.info('Renaming finished backup dir to: %s' % self._backup_path_final)
         rename(self._backup_path, self._backup_path_final)
+
+    def get_path(self):
+        return self._backup_path
+
+    def get_final_path(self):
+        return self._backup_path_final
