@@ -5,22 +5,40 @@ from os.path import join, expanduser
 from time import time
 import gzip
 import sys
+import csv
 
+from lib.config import get_config
 from lib.dtree import scan
 from lib.index import Index
 from lib.backup import Backup
 from lib.human_size import human_size
 
-from config import LOG_FORMAT, LOG_LEVEL, SOURCE_PATHS, BACKUP_PATH
 
-
-# Support ~ and ~user constructions.
-BACKUP_PATH = expanduser(BACKUP_PATH)
-SOURCE_PATHS = map(expanduser, SOURCE_PATHS)
+def _config_parse_value(value, list=True):
+    parser = csv.reader([value], delimiter=',', quotechar='"', skipinitialspace=True)
+    for fields in parser:
+        return fields if list else fields[0]
 
 
 def main():
     start = time()
+
+    # Determine profile to use.
+    try:
+        profile = sys.argv[1]
+    except IndexError:
+        profile = 'default'
+
+    # Load and extract our config.
+    config = get_config('%s.ini' % profile)
+    SOURCE_PATHS = _config_parse_value(config.get('source', 'paths'), True)
+    BACKUP_PATH = _config_parse_value(config.get('destination', 'path'), False)
+    LOG_LEVEL = _config_parse_value(config.get('logging', 'level'), False)
+    LOG_FORMAT = _config_parse_value(config.get('logging', 'format'), False)
+
+    # Support ~ and ~user constructions.
+    SOURCE_PATHS = map(expanduser, SOURCE_PATHS)
+    BACKUP_PATH = expanduser(BACKUP_PATH)
 
     # TODO How can we block the OS from going to sleep due to being idle?
 
