@@ -32,12 +32,14 @@ def main():
     # Load and extract our config.
     config = get_config('%s.ini' % profile)
     SOURCE_PATHS = _config_parse_value(config.get('source', 'paths'), True)
+    SOURCE_EXCLUDES = _config_parse_value(config.get('source', 'excludes'), True)
     BACKUP_PATH = _config_parse_value(config.get('destination', 'path'), False)
     LOG_LEVEL = _config_parse_value(config.get('logging', 'level'), False)
     LOG_FORMAT = _config_parse_value(config.get('logging', 'format'), False)
 
     # Support ~ and ~user constructions.
     SOURCE_PATHS = map(expanduser, SOURCE_PATHS)
+    SOURCE_EXCLUDES = map(expanduser, SOURCE_EXCLUDES)
     BACKUP_PATH = expanduser(BACKUP_PATH)
 
     # TODO How can we block the OS from going to sleep due to being idle?
@@ -59,8 +61,7 @@ def main():
     index = Index(db_path)
     for path in SOURCE_PATHS:
         logger.info('Scanning directory tree: %s' % path)
-        # TODO Implement regex excludes (i.e. .gvfs, .tmp, /home/.+/.cache, etc.)
-        index.update(scan(path))
+        index.update(scan(path, excludes=SOURCE_EXCLUDES))
 
     dirs_found, files_found = index.get_cur_stats()
     logger.info('Found %d dirs and %d files.' % (dirs_found, files_found))
