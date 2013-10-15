@@ -60,6 +60,7 @@ def main():
 
     # Backup and disable sleep timeout settings.
     if DISABLE_TIMEOUTS:
+        logging.info('Disabling system sleep mode timeouts.')
         ac_timeout = gsettings.get_int('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout')
         bat_timeout = gsettings.get_int('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout')
         gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', 0)
@@ -122,8 +123,9 @@ def main():
             # Rename backup directory and finalize backup.
             backup.commit()
     finally:
+        # Restore sleep timeout settings.
         if DISABLE_TIMEOUTS:
-            # Restore sleep timeout settings.
+            logging.info('Restoring system sleep mode timeouts.')
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', ac_timeout)
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', bat_timeout)
 
