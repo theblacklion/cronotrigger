@@ -5,7 +5,6 @@ from os.path import join, expanduser
 from time import time
 import gzip
 import sys
-import csv
 
 from lib.config import get_config
 from lib.dtree import scan
@@ -13,12 +12,6 @@ from lib.index import Index
 from lib.backup import Backup
 from lib.human_size import human_size
 from lib import gsettings
-
-
-def _config_parse_value(value, list=True):
-    parser = csv.reader([value], delimiter=',', quotechar='"', skipinitialspace=True)
-    for fields in parser:
-        return fields if list else fields[0]
 
 
 def main():
@@ -32,13 +25,12 @@ def main():
 
     # Load and extract our config.
     config = get_config('%s.ini' % profile)
-    # TODO clean this up using config.get_list, get_int etc.
-    SOURCE_PATHS = _config_parse_value(config.get('source', 'paths'), True)
-    SOURCE_EXCLUDES = _config_parse_value(config.get('source', 'excludes'), True)
-    BACKUP_PATH = _config_parse_value(config.get('destination', 'path'), False)
-    LOG_LEVEL = _config_parse_value(config.get('logging', 'level'), False)
-    LOG_FORMAT = _config_parse_value(config.get('logging', 'format'), False)
-    DISABLE_TIMEOUTS = _config_parse_value(config.get('power-management', 'disable_sleep_timeouts'), False)
+    SOURCE_PATHS = config.getlist('source', 'paths')
+    SOURCE_EXCLUDES = config.getlist('source', 'excludes')
+    BACKUP_PATH = config.get('destination', 'path')
+    LOG_LEVEL = config.get('logging', 'level')
+    LOG_FORMAT = config.get('logging', 'format')
+    DISABLE_TIMEOUTS = config.get('power-management', 'disable_sleep_timeouts')
 
     # Support ~ and ~user constructions.
     SOURCE_PATHS = map(expanduser, SOURCE_PATHS)
