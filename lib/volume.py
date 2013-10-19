@@ -1,5 +1,6 @@
 from os.path import join
 from gi.repository import Gio, GObject
+from gi._glib import GError
 import logging
 
 
@@ -37,22 +38,31 @@ def mount(uri):
             raise Exception('Volume not found: %s' % volume_name)
         if not user_data['status'] and volume_mounted:
             raise Exception('Could not mount volume: %s' % volume_name)
-        path = join(volume_found.get_mount().get_root().get_path(), path)
-        return volume_found if volume_mounted else False, path
+        volume_path = volume_found.get_mount().get_root().get_path()
+        path = join(volume_path, path)
+        logger.info('Mounted volume: "%s" -> %s' % (volume_name, volume_path))
+        return volume_found, path
     else:
         raise Exception('Unknown protocol: %s' % protocol)
 
 
 def __unmount_done_cb(obj, res, user_data):
-    user_data['status'] = obj.unmount_with_operation_finish(res)
+    try:
+        user_data['status'] = obj.unmount_with_operation_finish(res)
+    except GError as reason:
+        user_data['status'] = False
+        user_data['message'] = reason
     user_data['loop'].quit()
 
 
 def umount(volume):
     mount = volume.get_mount()
     loop = GObject.MainLoop()
-    user_data = dict(loop=loop, status=None)
+    user_data = dict(loop=loop, status=None, message=None)
     mount.unmount_with_operation(0, None, None, __unmount_done_cb, user_data)
     loop.run()
     if not user_data['status']:
-        logger.warning('Could not unmount volume: %s' % volume.get_name())
+        logger.warning('Could not unmount volume: "%s" -> %s' % (
+                       volume.get_name(), user_data['message']))
+    else:
+        logger.info('Unmounted volume: %s' % volume.get_name())

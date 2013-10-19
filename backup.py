@@ -126,8 +126,8 @@ def main():
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', ac_timeout)
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', bat_timeout)
 
-    if mounted_volume:
-        volume.umount(mounted_volume)
+        if mounted_volume:
+            volume.umount(mounted_volume)
 
     secs = time() - start
     logger.info('Backup finished after %.2f secs.' % secs)
