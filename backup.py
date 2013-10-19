@@ -12,6 +12,7 @@ from lib.index import Index
 from lib.backup import Backup
 from lib.human_size import human_size
 from lib import gsettings
+from lib import volume
 
 
 def main():
@@ -41,11 +42,15 @@ def main():
 
     logger = logging.getLogger('process')
 
+    BACKUP_PATH_REAL = BACKUP_PATH
+
     try:
-        backup = Backup(BACKUP_PATH)
+        if BACKUP_PATH.startswith('volume://'):
+            mounted_volume, BACKUP_PATH_REAL = volume.mount(BACKUP_PATH)
+        backup = Backup(BACKUP_PATH_REAL)
     except Exception as reason:
         logger.error(reason)
-        logger.error('Perhaps you forgot to mount your backup medium first?')
+        # logger.error('Perhaps you forgot to mount your backup medium first?')
         sys.exit(1)
 
     logger.info('Preparing backup.')
@@ -59,7 +64,7 @@ def main():
         gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', 0)
 
     try:
-        db_path = join(BACKUP_PATH, 'index.sqlite3')
+        db_path = join(BACKUP_PATH_REAL, 'index.sqlite3')
         index = Index(db_path)
         for path in SOURCE_PATHS:
             logger.info('Scanning directory tree: %s' % path)
@@ -117,9 +122,12 @@ def main():
     finally:
         # Restore sleep timeout settings.
         if DISABLE_TIMEOUTS:
-            logging.info('Restoring system sleep mode timeouts.')
+            logger.info('Restoring system sleep mode timeouts.')
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', ac_timeout)
             gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', bat_timeout)
+
+    if mounted_volume:
+        volume.umount(mounted_volume)
 
     secs = time() - start
     logger.info('Backup finished after %.2f secs.' % secs)

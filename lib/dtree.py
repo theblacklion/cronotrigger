@@ -6,19 +6,6 @@ import logging
 import re
 
 
-if version_info < (3, 3):
-    print('WARNING: Python version older than 3.3 does not support copystat on '
-          'symlinks! (chown, timestamp etc.)')
-
-    def copystat(src, dst, follow_symlinks=True):
-        if islink(dst):
-            return
-        shutil_copystat(src, dst)
-else:
-    copystat = lambda src, dst, follow_symlinks=True: shutil_copystat(
-        src, dst, follow_symlinks=follow_symlinks)
-
-
 try:
     from scandir import scandir  # , DirEntry
 except ImportError:
@@ -31,6 +18,17 @@ except ImportError:
 
 
 logger = logging.getLogger('dtree')
+
+
+if version_info < (3, 3):
+    logger.warn('WARNING: Python version older than 3.3 does not support '
+                'copystat on symlinks! (chmod, timestamp, etc.)')
+
+    def copystat(src, dst, follow_symlinks=True):
+        if follow_symlinks or not islink(dst):
+            shutil_copystat(src, dst)
+else:
+    copystat = shutil_copystat
 
 
 def _walk(top, excludes):
