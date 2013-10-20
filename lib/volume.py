@@ -1,3 +1,5 @@
+# TODO implement shell workaround if gi cannot be loaded.
+
 from os.path import join
 from gi.repository import Gio, GObject
 from gi._glib import GError
@@ -65,4 +67,4 @@ def umount(volume):
         logger.warning('Could not unmount volume: "%s" -> %s' % (
                        volume.get_name(), user_data['message']))
     else:
-        logger.info('Unmounted volume: %s' % volume.get_name())
+        logger.info('Unmounted volume: "%s"' % volume.get_name())

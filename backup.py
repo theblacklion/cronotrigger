@@ -43,7 +43,7 @@ def main():
     logger = logging.getLogger('process')
 
     BACKUP_PATH_REAL = BACKUP_PATH
-
+    mounted_volume = None
     try:
         if BACKUP_PATH.startswith('volume://'):
             mounted_volume, BACKUP_PATH_REAL = volume.mount(BACKUP_PATH)
@@ -99,7 +99,6 @@ def main():
                 logger.info('%s to copy.' % human_size(missing_bytes))
                 backup.copy_missing_files()
 
-            # TODO Test with only adding dirs. Perhaps we have to reverse the order?
             logger.info('Backing up dir stats.')
             backup.copy_dir_stats()
 
