@@ -5,13 +5,13 @@ from os.path import join, expanduser
 from time import time
 import gzip
 import sys
+from gi.repository import Gio
 
 from lib.config import get_config
 from lib.dtree import scan
 from lib.index import Index
 from lib.backup import Backup
 from lib.human_size import human_size
-from lib import gsettings
 from lib import volume
 
 
@@ -58,10 +58,11 @@ def main():
     # Backup and disable sleep timeout settings.
     if DISABLE_TIMEOUTS:
         logging.info('Disabling system sleep mode timeouts.')
-        ac_timeout = gsettings.get_int('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout')
-        bat_timeout = gsettings.get_int('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout')
-        gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', 0)
-        gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', 0)
+        power_settings = Gio.Settings('org.gnome.settings-daemon.plugins.power')
+        ac_timeout = power_settings.get_int('sleep-inactive-ac-timeout')
+        bat_timeout = power_settings.get_int('sleep-inactive-battery-timeout')
+        power_settings.set_int('sleep-inactive-ac-timeout', 0)
+        power_settings.set_int('sleep-inactive-battery-timeout', 0)
 
     try:
         db_path = join(BACKUP_PATH_REAL, 'index.sqlite3')
@@ -122,8 +123,8 @@ def main():
         # Restore sleep timeout settings.
         if DISABLE_TIMEOUTS:
             logger.info('Restoring system sleep mode timeouts.')
-            gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-ac-timeout', ac_timeout)
-            gsettings.set('org.gnome.settings-daemon.plugins.power', 'sleep-inactive-battery-timeout', bat_timeout)
+            power_settings.set_int('sleep-inactive-ac-timeout', ac_timeout)
+            power_settings.set_int('sleep-inactive-battery-timeout', bat_timeout)
 
         if mounted_volume:
             volume.umount(mounted_volume)
