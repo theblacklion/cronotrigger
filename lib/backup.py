@@ -375,7 +375,7 @@ class Backup(object):
                         copystat(src_file, dst_file)
                 else:
                     link(src_file, dst_file)
-            except FileNotFoundError as reason:
+            except FileNotFoundError as reason:  # TODO Does not work in Python < 3.3!
                 # TODO also check if we can read the file and if not, throw an error message.
                 # TODO perhaps mark unreadable files as such so that they won't be tried next time?
                 if exists(org_file):
