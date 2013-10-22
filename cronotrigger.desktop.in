@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=Cronotrigger
+Comment=Fast and easy configurable backup solution for your desktop.
+Exec=@prefix@/bin/cronotrigger
+Icon=application-default-icon
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=GNOME;Utility;System;Backup;
