@@ -1,6 +1,6 @@
 To build and install this program:
 
-./autogen.sh --prefix=/home/your_username/.local
+./autogen.sh --prefix=/home/$USER/.local
 make install
 
 -------------

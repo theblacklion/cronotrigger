@@ -2,3 +2,13 @@ __pycache__
 .pyc$
 config_local.py
 thirdparty/scandir/build
+^Makefile$
+^Makefile.in$
+^aclocal.m4$
+^autom4te.cache$
+^config.log$
+^config.status$
+^configure$
+^cronotrigger.desktop$
+^install-sh$
+^missing$
