@@ -1,6 +1,6 @@
 from os.path import exists, join, basename, dirname
 from os import (makedirs, readlink, symlink, link, rename, stat as os_stat,
-                mknod)
+                mknod, fstat as os_fstat)
 import stat
 import time
 import logging
@@ -17,6 +17,10 @@ from lib.dtree import scan, copystat
 # Define output chunk and queue size. E.g. 1 MB * 100 = 100 MB
 CHUNK_SIZE = 1024 * 1024 * 5  # Bytes
 QUEUE_SIZE = 25  # Length
+
+CHUNK_SPARSE_DATA = b'\0' * CHUNK_SIZE
+CHUNK_TYPE_SPARSE = None
+CHUNK_TYPE_EMPTY = 0
 
 
 class Reader(Thread):
@@ -96,17 +100,54 @@ class Reader(Thread):
                             data=src_file,
                             status=None,
                         ))
-                    else:
+                    elif size == 0:  # Empty file.
+                        percent = 100.0
+                        hsize = human_size(size)
+                        sum_percent = ((100.0 / sum_bytes *
+                                        sum_bytes_transferred)
+                                       if sum_bytes else 0)
+                        sum_hsize = human_size(sum_bytes)
+                        self._output_queue.put(dict(
+                            type='file',
+                            src_dir=src_dir,
+                            dst_file=dst_file,
+                            data=CHUNK_TYPE_EMPTY,
+                            status='file %.2f%% of %s; '
+                                   'global %.2f%% of %s' %
+                                   (percent, hsize, sum_percent,
+                                    sum_hsize),
+                        ))
+                        self._output_queue.put(dict(
+                            type='meta',
+                            src_dir=src_dir,
+                            dst_file=dst_file,
+                            data=src_file,
+                            status=None,
+                        ))
+                    else:  # Normal file.
                         with open(src_file, 'rb') as handle:
+                            # TODO Rework reading so that it reads 64k blocks
+                            #      and puts them into a data chunk as a list of
+                            #      strings and CHUNK_TYPE_SPARSE.
+                            #      Also rework the writer routines for this.
+                            detect_sparse = False
+                            if size >= CHUNK_SIZE:
+                                if os_fstat(handle.fileno()).st_blocks * 512 < size:
+                                    detect_sparse = True
                             chunk = handle.read(CHUNK_SIZE)  # read chunk
+                            chunk_len = len(chunk)
                             bytes_transferred = 0
-                            if len(chunk) == 0:
-                                percent = 100.0
+                            while chunk_len and self._running:
+                                bytes_transferred += chunk_len
+                                percent = 100.0 / size * bytes_transferred
                                 hsize = human_size(size)
+                                sum_bytes_transferred += chunk_len
                                 sum_percent = ((100.0 / sum_bytes *
                                                 sum_bytes_transferred)
                                                if sum_bytes else 0)
                                 sum_hsize = human_size(sum_bytes)
+                                if detect_sparse and chunk_len == CHUNK_SIZE and chunk == CHUNK_SPARSE_DATA:
+                                    chunk = CHUNK_TYPE_SPARSE
                                 self._output_queue.put(dict(
                                     type='file',
                                     src_dir=src_dir,
@@ -117,27 +158,8 @@ class Reader(Thread):
                                            (percent, hsize, sum_percent,
                                             sum_hsize),
                                 ))
-                            else:
-                                while len(chunk) and self._running:
-                                    bytes_transferred += len(chunk)
-                                    percent = 100.0 / size * bytes_transferred
-                                    hsize = human_size(size)
-                                    sum_bytes_transferred += len(chunk)
-                                    sum_percent = ((100.0 / sum_bytes *
-                                                    sum_bytes_transferred)
-                                                   if sum_bytes else 0)
-                                    sum_hsize = human_size(sum_bytes)
-                                    self._output_queue.put(dict(
-                                        type='file',
-                                        src_dir=src_dir,
-                                        dst_file=dst_file,
-                                        data=chunk,
-                                        status='file %.2f%% of %s; '
-                                               'global %.2f%% of %s' %
-                                               (percent, hsize, sum_percent,
-                                                sum_hsize),
-                                    ))
-                                    chunk = handle.read(CHUNK_SIZE)  # read more
+                                chunk = handle.read(CHUNK_SIZE)  # read more
+                                chunk_len = len(chunk)
                         self._output_queue.put(dict(
                             type='meta',
                             src_dir=src_dir,
@@ -150,7 +172,7 @@ class Reader(Thread):
                 except KeyboardInterrupt:
                     raise
                 except Exception as reason:
-                    self._logger.error(reason)
+                    self._logger.exception(reason)
 
                 self._input_queue.task_done()
             except Queue.Empty:
@@ -232,15 +254,23 @@ class Writer(Thread):
                             handle = open(dst_file, 'wb')
                             self._num_files += 1
                             self._logger.debug('Created file: %s' % dst_file)
-                        handle.write(data)
+                        if data is CHUNK_TYPE_EMPTY:
+                            pass  # Nothing to write.
+                        elif data is not CHUNK_TYPE_SPARSE:
+                            # print('NORMAL')
+                            handle.write(data)
+                        else:
+                            # print('SPARSE')
+                            handle.seek(CHUNK_SIZE, 1)  # 1 means cur file pos.
                     elif type_ == 'meta':
                         if handle and handle.name == dst_file:
                             handle.close()
+                            handle = None
                         copystat(data, dst_file, follow_symlinks=False)
                 except KeyboardInterrupt:
                     raise
                 except Exception as reason:
-                    self._logger.error(reason)
+                    self._logger.exception(reason)
 
                 self._input_queue.task_done()
             except Queue.Empty:
@@ -408,7 +438,7 @@ class Backup(object):
             except KeyboardInterrupt:
                 raise
             except Exception as reason:
-                self._logger.error(reason)
+                self._logger.exception(reason)
             del parts[-1]
 
     def copy_dir_stats(self):
