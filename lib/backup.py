@@ -145,10 +145,6 @@ class Reader(Thread):
                         ))
                     else:  # Normal file.
                         with open(src_file, 'rb') as handle:
-                            # TODO Rework reading so that it reads 64k blocks
-                            #      and puts them into a data chunk as a list of
-                            #      strings and CHUNK_TYPE_SPARSE.
-                            #      Also rework the writer routines for this.
                             detect_sparse = False
                             if size >= CHUNK_SIZE:
                                 if os_fstat(handle.fileno()).st_blocks * 512 < size:

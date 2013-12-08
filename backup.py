@@ -79,7 +79,7 @@ def main():
 
         # Only create new backup if files or dirs have changed or been added.
         if index.get_num_added_or_modified_dirs_or_files():
-            backup.create(sum_bytes=bytes)
+            backup.create(bytes)
 
             logger.info('Backing up tree structure.')
             # backup.create_tree(index.get_all_dirs())
