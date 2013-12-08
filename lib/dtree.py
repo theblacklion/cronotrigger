@@ -48,13 +48,13 @@ def _walk(top, excludes):
         if is_excluded(entry_path):
             logger.info('Excluded path: %s' % entry_path)
             continue
-        if entry.isdir():
+        if entry.is_dir():
             dirs.append(entry)
         else:
             files.append(entry)
     yield top, dirs, files
     for entry in dirs:
-        if not entry.islink():
+        if not entry.is_symlink():
             if access(join(entry._path, entry.name), R_OK | X_OK):
                 for x in _walk(entry, excludes):
                     yield x
@@ -73,8 +73,9 @@ def walk(path, excludes):
 def scan(path, excludes=[]):
     excludes = tuple(map(re.compile, excludes))
     for root, dirs, files in walk(path, excludes):
-        mtime = root.lstat().st_mtime
-        inode = root.dirent.d_ino
+        stat = root.lstat()
+        mtime = stat.st_mtime
+        inode = stat.st_ino
         if len(dirs) > 1:
-            dirs.sort(key=lambda item: item.dirent.d_ino)
+            dirs.sort(key=lambda item: item.lstat().st_ino)
         yield root, mtime, inode, dirs, files
