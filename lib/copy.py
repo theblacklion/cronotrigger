@@ -63,12 +63,17 @@ class Reader(Thread):
         while self._running:
             try:
                 item = self._input_queue.get(timeout=0.1)
-                src_dir = item['src_dir']
+                src_dir = item['src_dir']  # Only for makedirs later on.
                 src_file = item['src_file']
                 dst_file = item['dst_file']
                 size = item['size']
                 is_link = item['is_link']
                 is_file = item['is_file']
+
+                # Currently only used by the restore process.
+                if item['src_resolver']:
+                    src_file = item['src_resolver'](src_file)
+                    src_dir = dirname(src_file)
 
                 type_ = 'file'
                 if is_link:
@@ -230,7 +235,7 @@ class Writer(Thread):
             try:
                 item = self._input_queue.get(timeout=0.1)
                 type_ = item['type']
-                src_dir = item['src_dir']
+                src_dir = item['src_dir']  # Only for makedirs later on.
                 dst_file = item['dst_file']
                 data = item['data']
                 status = item['status']

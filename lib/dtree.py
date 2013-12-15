@@ -31,7 +31,7 @@ else:
     copystat = shutil_copystat
 
 
-def _walk(top, excludes):
+def _walk(top, excludes, recursive):
     dirs = []
     files = []
     if excludes:
@@ -53,26 +53,27 @@ def _walk(top, excludes):
         else:
             files.append(entry)
     yield top, dirs, files
-    for entry in dirs:
-        if not entry.is_symlink():
-            if access(join(entry._path, entry.name), R_OK | X_OK):
-                for x in _walk(entry, excludes):
-                    yield x
-            else:
-                logger.warning('Could not access dir: %s' % join(entry._path, entry.name))
+    if recursive:
+        for entry in dirs:
+            if not entry.is_symlink():
+                if access(join(entry._path, entry.name), R_OK | X_OK):
+                    for x in _walk(entry, excludes, recursive):
+                        yield x
+                else:
+                    logger.warning('Could not access dir: %s' % join(entry._path, entry.name))
 
 
-def walk(path, excludes):
+def walk(path, excludes, recursive=True):
     dir_path, dir_name = split(path)
     for entry in scandir(dir_path):
         if entry.name == dir_name:
-            return _walk(entry, excludes)
+            return _walk(entry, excludes, recursive)
     raise Exception('Directory "%s" not found in "%s".' % (dir_name, dir_path))
 
 
-def scan(path, excludes=[]):
+def scan(path, excludes=[], recursive=True):
     excludes = tuple(map(re.compile, excludes))
-    for root, dirs, files in walk(path, excludes):
+    for root, dirs, files in walk(path, excludes, recursive):
         stat = root.lstat()
         mtime = stat.st_mtime
         inode = stat.st_ino

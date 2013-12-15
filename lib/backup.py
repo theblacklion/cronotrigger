@@ -76,6 +76,7 @@ class Backup(object):
             self._input_queue.put(dict(
                 src_dir=src_path,
                 src_file=src_file,
+                src_resolver=None,
                 dst_file=dst_file,
                 size=size,
                 is_link=is_link,
@@ -94,6 +95,7 @@ class Backup(object):
                            self._writer._num_symlinks))
 
     def link_old_files(self, files):
+        # TODO replace with more low-level cached variant like in restore process.
         backup_dirs = sorted(next(scan(self._base_path))[3], key=lambda item: item.name)
         del backup_dirs[-1]  # Remove our current backup dir.
         if not backup_dirs:
@@ -147,6 +149,7 @@ class Backup(object):
         self.copy_files(self._missing_files)
 
     def _copy_dir_stats(self, path):
+        # TODO remember already seen dirs and skip them below.
         parts = path.lstrip('./').split('/')
         while parts:
             src_dir = '/'.join([''] + parts)

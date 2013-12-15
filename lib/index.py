@@ -191,6 +191,8 @@ class Index(object):
                      AND dirs.mtime != cur_dirs.mtime)'''
             return cur.execute(sql)
 
+    get_selected_dirs = get_all_dirs
+
     def get_added_files(self):
         with self._db_conn as cur:
             sql = '''SELECT cur_files.* FROM cur_files
@@ -226,6 +228,11 @@ class Index(object):
                      ORDER BY cur_files.inode asc'''
             return cur.execute(sql)
 
+    def get_selected_files(self):
+        with self._db_conn as cur:
+            sql = '''SELECT cur_files.* FROM cur_files'''
+            return cur.execute(sql)
+
     def get_added_bytes(self):
         with self._db_conn as cur:
             sql = '''SELECT sum(cur_files.size) FROM cur_files
@@ -240,6 +247,12 @@ class Index(object):
                      LEFT JOIN files USING (path, name)
                      WHERE files.mtime IS NOT NULL
                      AND files.mtime != cur_files.mtime
+                     LIMIT 1'''
+            return cur.execute(sql).fetchone()[0] or 0
+
+    def get_selected_bytes(self):
+        with self._db_conn as cur:
+            sql = '''SELECT sum(cur_files.size) FROM cur_files
                      LIMIT 1'''
             return cur.execute(sql).fetchone()[0] or 0
 
@@ -285,3 +298,12 @@ class Index(object):
         self.__truncate_base_tables()
         self.__migrate_table_data()
         self.__truncate_tmp_tables()
+
+    def select(self, path):
+        with self._db_conn as cur:
+            sql = '''INSERT INTO cur_dirs SELECT * FROM dirs
+                     WHERE dirs.path like ?'''
+            cur.execute(sql, ['%s%%' % path])
+            sql = '''INSERT INTO cur_files SELECT * FROM files
+                     WHERE files.path like ?'''
+            cur.execute(sql, ['%s%%' % path])
