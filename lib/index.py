@@ -103,6 +103,7 @@ class Index(object):
         self.__truncate_tmp_tables()
 
     def update(self, nodes):
+        # TODO we should save rights, timestamp and owners in the db. Restore should use these.
         def entry_list(files):
             results = []
             for entry in files:
