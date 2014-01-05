@@ -43,15 +43,19 @@ def _walk(top, excludes, recursive):
     else:
         is_excluded = lambda path: False  # Faster if no excludes given.
     path = join(top._path, top.name)
-    for entry in scandir(path):
-        entry_path = join(entry._path, entry.name)
-        if is_excluded(entry_path):
-            logger.info('Excluded path: %s' % entry_path)
-            continue
-        if entry.is_dir():
-            dirs.append(entry)
-        else:
-            files.append(entry)
+    try:
+        for entry in scandir(path):
+            entry_path = join(entry._path, entry.name)
+            if is_excluded(entry_path):
+                logger.info('Excluded path: %s' % entry_path)
+                continue
+            if entry.is_dir():
+                dirs.append(entry)
+            else:
+                files.append(entry)
+    except Exception as excp:
+        logger.error('Could not completely scan path: %s' % path)
+        logger.exception(excp)
     yield top, dirs, files
     if recursive:
         for entry in dirs:
