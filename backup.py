@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import logging
-from os.path import join, expanduser
+from os.path import join
 from time import time
 import gzip
 import sys
@@ -12,6 +12,7 @@ from lib.dtree import scan
 from lib.index import Index
 from lib.backup import Backup
 from lib.human_size import human_size
+from lib.util import expandvars
 from lib import volume
 
 
@@ -33,10 +34,10 @@ def main():
     LOG_FORMAT = config.get('logging', 'format')
     DISABLE_TIMEOUTS = config.get('power-management', 'disable_sleep_timeouts')
 
-    # Support ~ and ~user constructions.
-    SOURCE_PATHS = map(expanduser, SOURCE_PATHS)
-    SOURCE_EXCLUDES = map(expanduser, SOURCE_EXCLUDES)
-    BACKUP_PATH = expanduser(BACKUP_PATH)
+    # Support ~, ~user and other constructions.
+    SOURCE_PATHS = map(expandvars, SOURCE_PATHS)
+    SOURCE_EXCLUDES = map(expandvars, SOURCE_EXCLUDES)
+    BACKUP_PATH = expandvars(BACKUP_PATH)
 
     logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT)
 
