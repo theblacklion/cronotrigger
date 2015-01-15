@@ -10,10 +10,10 @@ try:
     from scandir import scandir  # , DirEntry
 except ImportError:
     print('ERROR: Please install the scandir package from: '
-          'https://github.com/benhoyt/scandir')
+          'https://github.com/theblacklion/scandir')
     print('       You can do so by e.g. invoking the following command:')
     print('       pip install '
-          'https://github.com/benhoyt/scandir/archive/master.zip')
+          'https://github.com/theblacklion/scandir/archive/master.zip')
     exit(1)
 
 
@@ -42,29 +42,27 @@ def _walk(top, excludes, recursive):
             return False
     else:
         is_excluded = lambda path: False  # Faster if no excludes given.
-    path = join(top._path, top.name)
     try:
-        for entry in scandir(path):
-            entry_path = join(entry._path, entry.name)
-            if is_excluded(entry_path):
-                logger.info('Excluded path: %s' % entry_path)
+        for entry in scandir(top.path):
+            if is_excluded(entry.path):
+                logger.info('Excluded path: %s' % entry.path)
                 continue
             if entry.is_dir():
                 dirs.append(entry)
             else:
                 files.append(entry)
     except Exception as excp:
-        logger.error('Could not completely scan path: %s' % path)
+        logger.error('Could not completely scan path: %s' % top.path)
         logger.exception(excp)
     yield top, dirs, files
     if recursive:
         for entry in dirs:
             if not entry.is_symlink():
-                if access(join(entry._path, entry.name), R_OK | X_OK):
+                if access(entry.path, R_OK | X_OK):
                     for x in _walk(entry, excludes, recursive):
                         yield x
                 else:
-                    logger.warning('Could not access dir: %s' % join(entry._path, entry.name))
+                    logger.warning('Could not access dir: %s' % entry.path)
 
 
 def walk(path, excludes, recursive=True):
@@ -78,9 +76,9 @@ def walk(path, excludes, recursive=True):
 def scan(path, excludes=[], recursive=True):
     excludes = tuple(map(re.compile, excludes))
     for root, dirs, files in walk(path, excludes, recursive):
-        stat = root.lstat()
+        stat = root.stat(follow_symlinks=False)
         mtime = stat.st_mtime
         inode = stat.st_ino
         if len(dirs) > 1:
-            dirs.sort(key=lambda item: item.lstat().st_ino)
+            dirs.sort(key=lambda item: item.stat(follow_symlinks=False).st_ino)
         yield root, mtime, inode, dirs, files

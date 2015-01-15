@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+/Makefile
+/Makefile.in
+/aclocal.m4
+/autom4te.cache
+/config.log
+/config.status
+/configure
+/cronotrigger.desktop
+/install-sh
+/missing

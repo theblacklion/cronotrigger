@@ -2,7 +2,7 @@
 
 from os.path import join
 from gi.repository import Gio, GObject
-from gi._glib import GError
+from gi.repository.GLib import GError
 import logging
 
 

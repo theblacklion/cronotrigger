@@ -1,0 +1,3 @@
+[submodule "thirdparty/scandir"]
+	path = thirdparty/scandir
+	url = https://github.com/theblacklion/scandir.git

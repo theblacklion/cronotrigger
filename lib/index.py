@@ -107,15 +107,15 @@ class Index(object):
         def entry_list(files):
             results = []
             for entry in files:
-                # This is flawed on i.e. broken links. We should just catch up errors on lstat below, I suppose...
-                # if not access(join(entry._path, entry.name), R_OK):
-                #     self._logger.warning('Could not access file: %s' % join(entry._path, entry.name))
-                #     continue
                 try:
-                    lstat = entry.lstat()
-                    results.append((entry._path, entry.name, lstat.st_mtime,
-                                    lstat.st_size, entry.is_symlink(), entry.is_file(),
-                                    lstat.st_ino))
+                    try:
+                        stat = entry._lstat
+                        stat.st_mtime
+                    except AttributeError:
+                        stat = entry.stat(follow_symlinks=False)
+                    results.append((entry._scandir_path, entry.name, stat.st_mtime,
+                                    stat.st_size, entry.is_symlink(), entry.is_file(),
+                                    stat.st_ino))
                 except (OSError, IOError) as reason:
                     self._logger.error(reason)
             return results
@@ -124,13 +124,18 @@ class Index(object):
         feeder_started = False
         # print('scanning')
         # start = time.time()
+        def sort_key(item):
+            try:
+                return item._lstat.st_ino
+            except AttributeError:
+                return item.stat(follow_symlinks=False).st_ino
         for root, root_mtime, root_inode, subdirs, files in nodes:
             # print root, root_mtime, subdirs, files
             if len(files) > 1:
-                files.sort(key=lambda item: item.lstat().st_ino)
+                files.sort(key=sort_key)
             try:
                 queue.put_nowait(dict(
-                    dir_data=(join(root._path, root.name), root_mtime, root_inode),
+                    dir_data=(root.path, root_mtime, root_inode),
                     file_data=entry_list(files),
                 ))
             except Queue.Full:
@@ -140,7 +145,7 @@ class Index(object):
                     feeder_started = True
                     # print('Waiting for feeder to come up.')
                 queue.put(dict(
-                    dir_data=(join(root._path, root.name), root_mtime, root_inode),
+                    dir_data=(root.path, root_mtime, root_inode),
                     file_data=entry_list(files),
                 ))
                 time.sleep(1)
