@@ -6,9 +6,6 @@ from os.path import join, exists, expanduser
 import csv
 
 
-USER_CONFIG_DIR = '~/.config/cronotrigger'
-
-
 class ConfigParser(configparser.ConfigParser):
 
     def __csv_parse_value(self, value, list=True):
@@ -33,7 +30,8 @@ def get_config(user_config):
     config = ConfigParser()
     config.read('default.ini')
 
-    user_filepath = expanduser(join(USER_CONFIG_DIR, user_config))
+    user_config_path = config.get('user-config', 'path')
+    user_filepath = expanduser(join(user_config_path, user_config))
     if exists(user_filepath):
         config.read(user_filepath)
 
