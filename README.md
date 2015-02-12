@@ -23,3 +23,6 @@ Requirements:
 
 You want to setup a virtualenv for installing the scandir module. Later on I'm
 planning to provide everything as a ppa.
+
+
+[![Join the chat at https://gitter.im/theblacklion/cronotrigger](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/theblacklion/cronotrigger?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
